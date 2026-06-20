@@ -1248,6 +1248,8 @@
                     hitArea.setAttribute("fill", "none");
                     hitArea.setAttribute("stroke-linecap", "round");
                     hitArea.setAttribute("stroke-linejoin", "round");
+                    hitArea.setAttribute("stroke-dasharray", `${Math.max(snakeLength, 0.1)} 9999`);
+                    hitArea.setAttribute("stroke-dashoffset", "0");
 
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("class", "snake-body");
