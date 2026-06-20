@@ -1241,6 +1241,14 @@
                     group.setAttribute("class", `snake-group ${movable ? 'movable' : 'locked'}`);
                     group.setAttribute("data-id", snake.id);
                     
+                    const hitArea = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    hitArea.setAttribute("d", d);
+                    hitArea.setAttribute("stroke", "transparent");
+                    hitArea.setAttribute("stroke-width", "40");
+                    hitArea.setAttribute("fill", "none");
+                    hitArea.setAttribute("stroke-linecap", "round");
+                    hitArea.setAttribute("stroke-linejoin", "round");
+
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("class", "snake-body");
                     path.setAttribute("d", d);
@@ -1256,9 +1264,13 @@
                     head.setAttribute("points", `-${hw},${hw} 0,-${hl} ${hw},${hw}`);
                     head.setAttribute("transform", `translate(${headPt.x}, ${headPt.y}) rotate(${rot})`);
                     
+                    group.appendChild(hitArea);
                     group.appendChild(path);
                     group.appendChild(head);
-                    group.addEventListener('click', () => onSnakeTap(snake, group, movable));
+                    group.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                        onSnakeTap(snake, group, movable);
+                    });
                     svg.appendChild(group);
                 });
                 
