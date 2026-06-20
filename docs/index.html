@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>VECTOR YARD — Arrow Chain Puzzle</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230071e3'/%3E%3Cpath d='M30,50 L70,50 M50,30 L70,50 L50,70' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f5f5f7;
+            --bg-gradient: linear-gradient(160deg, #f5f5f7 0%, #e8e8ed 100%);
+            --card-bg: #ffffff;
+            --dot-color: #d1d1d6;
+            --arrow-color: #1d1d1f;
+            --error-color: #ff3b30;
+            --accent: #0071e3;
+            --accent-glow: rgba(0, 113, 227, 0.15);
+            --text-color: #1d1d1f;
+            --text-dim: #86868b;
+            --ui-bg: #ffffff;
+            --ui-border: rgba(0,0,0,0.06);
+            --btn-hover: #f0f0f5;
+            --btn-primary-hover: #0077ed;
+            --card-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0.5px 1px rgba(0,0,0,0.04);
+            --card-shadow-lg: 0 8px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+            --overlay-bg: rgba(245, 245, 247, 0.92);
+            --cell-size: 64px;
+            --dot-size: 2px;
+            --sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+            --board-glow: 0 0 60px rgba(0,0,0,0.04);
+            --faq-hover: #fafafa;
+            --faq-answer-bg: #fafafa;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0a0a0a;
+            --bg-gradient: linear-gradient(160deg, #0a0a0a 0%, #111111 100%);
+            --card-bg: #1c1c1e;
+            --dot-color: #2c2c2e;
+            --arrow-color: #f5f5f7;
+            --error-color: #ff453a;
+            --accent: #0a84ff;
+            --accent-glow: rgba(10, 132, 255, 0.15);
+            --text-color: #f5f5f7;
+            --text-dim: #98989d;
+            --ui-bg: #1c1c1e;
+            --ui-border: rgba(255,255,255,0.08);
+            --btn-hover: #2c2c2e;
+            --btn-primary-hover: #409cff;
+            --card-shadow: 0 2px 12px rgba(0,0,0,0.3), 0 0.5px 1px rgba(0,0,0,0.2);
+            --card-shadow-lg: 0 8px 40px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+            --overlay-bg: rgba(10, 10, 10, 0.92);
+            --board-glow: 0 0 60px rgba(10, 132, 255, 0.05);
+            --faq-hover: #2c2c2e;
+            --faq-answer-bg: #1c1c1e;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            font-family: var(--sans);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+            user-select: none;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 64px 16px 80px;
+            min-height: 100vh;
+        }
+
+        /* ── Top Settings ─────────────────────────────── */
+        #topSettings {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .setting-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--card-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            filter: none;
+            opacity: 1;
+        }
+
+        .setting-btn:hover {
+            transform: scale(1.08);
+            box-shadow: var(--card-shadow-lg);
+        }
+
+        /* ── Game Header ──────────────────────────────── */
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .eyebrow {
+            font-size: 10px;
+            letter-spacing: .35em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin: 0 0 6px;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 28px;
+            letter-spacing: .04em;
+            margin: 0;
+            font-weight: 800;
+            color: var(--text-color);
+            line-height: 1;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        /* ── HUD Panel ────────────────────────────────── */
+        .hud {
+            display: flex;
+            gap: 0;
+            align-items: stretch;
+            background: var(--card-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 16px;
+            padding: 0;
+            margin-bottom: 12px;
+            font-size: 11px;
+            color: var(--text-dim);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .hud .stat {
+            text-align: center;
+            padding: 12px 20px;
+            flex: 1;
+            min-width: 72px;
+        }
+
+        .hud b {
+            color: var(--text-color);
+            font-size: 20px;
+            display: block;
+            line-height: 1;
+            margin-bottom: 3px;
+            font-family: var(--mono);
+        }
+
+        .hud .divider {
+            width: 1px;
+            background: var(--ui-border);
+            align-self: stretch;
+        }
+
+        /* ── Hearts ───────────────────────────────────── */
+        #hearts {
+            text-align: center;
+            font-size: 22px;
+            margin: 4px 0 6px;
+            height: 28px;
+            letter-spacing: 4px;
+            filter: drop-shadow(0 2px 4px rgba(255, 59, 48, 0.2));
+        }
+
+        /* ── Status ───────────────────────────────────── */
+        #status {
+            min-height: 18px;
+            font-size: 11px;
+            letter-spacing: .1em;
+            color: var(--error-color);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity .3s;
+            font-weight: 700;
+        }
+
+        #status.show { opacity: 1; }
+
+        /* ── Game Board ───────────────────────────────── */
+        #board-wrap {
+            position: relative;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: var(--card-shadow-lg), var(--board-glow);
+            border: 1px solid var(--ui-border);
+        }
+
+        #grid {
+            box-sizing: content-box;
+            background: transparent;
+            padding: calc(var(--cell-size) * 0.25);
+            position: relative;
+            background-image: radial-gradient(var(--dot-color) var(--dot-size), transparent var(--dot-size));
+            background-size: var(--cell-size) var(--cell-size);
+            background-position: calc(var(--cell-size) * 0.75) calc(var(--cell-size) * 0.75);
+            overflow: visible;
+        }
+
+        #snakes-layer {
+            position: absolute;
+            top: calc(var(--cell-size) * 0.25);
+            left: calc(var(--cell-size) * 0.25);
+            z-index: 10;
+            overflow: visible;
+        }
+
+        .snake-group {
+            cursor: pointer;
+            pointer-events: auto;
+            transition: opacity 0.3s ease, filter 0.2s;
+        }
+
+        .snake-group:hover {
+            filter: drop-shadow(0 0 8px var(--accent-glow));
+        }
+
+        .snake-body {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke: var(--arrow-color);
+        }
+
+        .snake-head { fill: var(--arrow-color); }
+
+        .snake-group.locked { cursor: pointer; }
+        .snake-group.firing { z-index: 20; }
+
+        .snake-group.bump {
+            animation: bump 0.22s ease;
+        }
+
+        @keyframes bump {
+            0% { transform: translate(0, 0); }
+            40% { transform: translate(var(--bx, 0), var(--by, 0)); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* ── Controls ─────────────────────────────────── */
+        #controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 30;
+        }
+
+        /* ── Buttons ──────────────────────────────────── */
+        button {
+            font-family: var(--sans);
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: .02em;
+            cursor: pointer;
+            transition: all .2s;
+            box-shadow: var(--card-shadow);
+        }
+
+        button:hover {
+            border-color: var(--accent);
+            background: var(--btn-hover);
+            box-shadow: var(--card-shadow-lg);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: scale(.97) translateY(0);
+        }
+
+        button.primary {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+            box-shadow: 0 4px 16px rgba(0, 113, 227, 0.25);
+        }
+
+        button.primary:hover {
+            background: var(--btn-primary-hover);
+            box-shadow: 0 6px 24px rgba(0, 113, 227, 0.35);
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        #legend {
+            margin-top: 24px;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+            line-height: 1.7;
+            max-width: 340px;
+        }
+
+        #legend b { color: var(--text-color); }
+
+        /* ── Tutorial Hand ────────────────────────────── */
+        .tutorial-hand-wrap {
+            position: absolute;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .tutorial-hand {
+            position: absolute;
+            font-size: 36px;
+            left: -18px;
+            top: 5px;
+            animation: pointBounce 0.8s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        @keyframes pointBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-12px) scale(1.05); }
+        }
+
+        /* ── Win Overlay ──────────────────────────────── */
+        #winOverlay {
+            position: fixed;
+            inset: 0;
+            background: var(--overlay-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 50;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #winOverlay.show { display: flex; }
+
+        #winOverlay h2 {
+            font-size: 36px;
+            color: var(--text-color);
+            letter-spacing: .06em;
+            margin: 0 0 6px;
+            font-weight: 800;
+        }
+
+        #winOverlay p {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin: 0 0 28px;
+            font-weight: 400;
+        }
+
+        /* ── Board Scale on Small Screens ─────────────── */
+        @media (max-width:480px) {
+            #board-wrap {
+                transform: scale(0.85);
+                transform-origin: top center;
+            }
+            #controls { margin-top: 10px; }
+        }
+
+        @media (max-width:380px) {
+            #board-wrap {
+                transform: scale(0.7);
+            }
+        }
+
+        /* ── Legacy Info Section (unused but kept) ────── */
+        #info-section {
+            margin-top: 60px;
+            max-width: 500px;
+            padding: 24px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--ui-border);
+            text-align: left;
+            line-height: 1.6;
+            box-shadow: var(--card-shadow);
+        }
+
+        #info-section h3 { font-size: 18px; margin: 0 0 12px 0; font-weight: 600; }
+        #info-section p { margin: 0 0 16px 0; font-size: 15px; color: var(--text-dim); font-weight: 300; }
+        #info-section b { color: var(--text-color); font-weight: 600; }
+
+        /* ── Level Editor ─────────────────────────────── */
+        #editorToggleBtn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 100;
+            font-family: var(--sans);
+            font-size: 13px;
+            font-weight: 600;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 113, 227, 0.3);
+            transition: all .2s;
+            letter-spacing: .02em;
+        }
+        #editorToggleBtn:hover { background: var(--btn-primary-hover); transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0, 113, 227, 0.4); }
+        #editorToggleBtn.active { background: var(--error-color); box-shadow: 0 4px 20px rgba(255, 59, 48, 0.3); }
+
+        #editorToolbar {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 20px 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: var(--card-shadow-lg);
+        }
+        #editorToolbar.visible { display: flex; }
+
+        .editor-toolbar-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .editor-hint {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-align: center;
+            line-height: 1.5;
+            background: var(--btn-hover);
+            padding: 12px 16px;
+            border-radius: 12px;
+        }
+        .editor-hint b { color: var(--text-color); }
+
+        #editorGrid {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            cursor: crosshair;
+            display: none;
+            touch-action: none;
+        }
+        #editorGrid.active { display: block; }
+
+        .editor-preview-dot {
+            fill: rgba(0, 113, 227, 0.4);
+            pointer-events: none;
+        }
+        .editor-preview-line {
+            stroke: rgba(0, 113, 227, 0.6);
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+
+        #shareToast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--text-color);
+            color: var(--bg-color);
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s, transform .3s;
+            z-index: 200;
+            white-space: nowrap;
+            box-shadow: var(--card-shadow-lg);
+        }
+        #shareToast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── Landing Info Section ─────────────────────── */
+        #landing {
+            width: 100%;
+            max-width: 580px;
+            margin-top: 80px;
+            padding-top: 60px;
+            position: relative;
+        }
+
+        #landing::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--ui-border);
+        }
+
+        .section-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .3em;
+            text-transform: uppercase;
+            color: var(--accent);
+            text-align: center;
+            margin: 0 0 10px;
+            font-weight: 700;
+        }
+
+        .landing-hero-title {
+            font-size: clamp(28px, 7vw, 44px);
+            font-weight: 800;
+            text-align: center;
+            line-height: 1.1;
+            margin: 0 0 14px;
+            letter-spacing: -.02em;
+        }
+
+        .landing-hero-sub {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 15px;
+            font-weight: 300;
+            line-height: 1.65;
+            max-width: 420px;
+            margin: 0 auto 44px;
+        }
+
+        /* ── Stats Cards ──────────────────────────────── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 64px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 18px;
+            padding: 22px 14px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--card-shadow-lg);
+        }
+
+        .stat-card .sc-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .sc-val {
+            font-size: 24px;
+            font-weight: 800;
+            display: block;
+            line-height: 1;
+            margin-bottom: 6px;
+            font-family: var(--mono);
+            color: var(--text-color);
+        }
+
+        .stat-card .sc-label {
+            font-size: 9px;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        /* ── How To Play Cards ────────────────────────── */
+        .how-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 64px;
+        }
+
+        .how-card {
+            background: var(--card-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 18px;
+            padding: 22px 18px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .how-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--card-shadow-lg);
+        }
+
+        .how-card .hc-num {
+            font-family: var(--mono);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 10px;
+            line-height: 1;
+            opacity: 0.4;
+        }
+
+        .how-card .hc-title {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .how-card .hc-desc {
+            font-size: 13px;
+            color: var(--text-dim);
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        /* ── FAQ Accordion ────────────────────────────── */
+        .faq-section { margin-bottom: 60px; }
+
+        .faq-item {
+            border: 1px solid var(--ui-border);
+            border-radius: 14px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: box-shadow 0.2s;
+        }
+
+        .faq-item:hover { box-shadow: var(--card-shadow-lg); }
+
+        .faq-q {
+            width: 100%;
+            background: var(--card-bg);
+            border: none;
+            padding: 16px 20px;
+            font-family: var(--sans);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            transition: background .15s;
+            letter-spacing: 0;
+            text-transform: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .faq-q:hover { background: var(--faq-hover); transform: none; box-shadow: none; }
+
+        .faq-q .faq-icon {
+            font-size: 18px;
+            transition: transform .25s;
+            flex-shrink: 0;
+            color: var(--accent);
+            font-weight: 400;
+        }
+
+        .faq-item.open .faq-icon { transform: rotate(45deg); }
+
+        .faq-a {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .3s ease, padding .3s ease;
+            background: var(--faq-answer-bg);
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.65;
+            padding: 0 20px;
+            font-weight: 300;
+        }
+
+        .faq-item.open .faq-a {
+            max-height: 200px;
+            padding: 12px 20px 18px;
+        }
+
+        /* ── Footer ───────────────────────────────────── */
+        .landing-footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-dim);
+            padding-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        /* ── Responsive ───────────────────────────────── */
+        @media (max-width: 480px) {
+            .how-grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+            #editorToolbar button {
+                padding: 8px 10px;
+                font-size: 11px;
+                letter-spacing: .02em;
+            }
+            .hud .stat { padding: 10px 14px; }
+            .hud b { font-size: 16px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .snake-group.bump { animation: none; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="topSettings">
+        <button id="soundToggleBtn" class="setting-btn" title="Toggle Sound">🔊</button>
+        <button id="themeToggleBtn" class="setting-btn" title="Toggle Dark Mode">🌙</button>
+    </div>
+
+    <div class="game-header">
+        <p class="eyebrow">Vector Yard — Snake Puzzle</p>
+        <h1>ARROW <span>CHAIN</span></h1>
+    </div>
+
+    <div class="hud">
+        <div class="stat"><b id="hudLevel">1</b>LEVEL</div>
+        <div class="divider"></div>
+        <div class="stat"><b id="hudRemaining">0</b>REMAIN</div>
+        <div class="divider"></div>
+        <div class="stat"><b id="hudMoves">0</b>MOVES</div>
+    </div>
+    
+    <div id="hearts">
+        ❤️❤️❤️
+    </div>
+
+    <div id="status"></div>
+
+    <div id="board-wrap">
+        <div id="grid"></div>
+    </div>
+
+    <div id="controls">
+        <button id="nextBtn" class="primary" style="display: none;">Next Level →</button>
+    </div>
+
+    <!-- Level Editor Toolbar -->
+    <div id="editorToolbar">
+        <div class="editor-hint">
+            <b>Draw Mode:</b> Click &amp; drag across the grid to draw a snake.
+            The <b>start</b> of your drag = tail, <b>end</b> = head (arrow).
+            Click an existing snake to <b>delete</b> it.
+        </div>
+        <div class="editor-toolbar-row">
+            <button id="edAddRow">+ Row</button>
+            <button id="edRemRow">− Row</button>
+            <button id="edAddCol">+ Col</button>
+            <button id="edRemCol">− Col</button>
+            <button id="edClear">Clear</button>
+        </div>
+        <div class="editor-toolbar-row">
+            <button id="edPlayTest" class="primary">▶ Play Test</button>
+            <button id="edShare">🔗 Share Link</button>
+        </div>
+    </div>
+
+    <button id="editorToggleBtn">✏️ Level Editor</button>
+    <div id="shareToast">Link copied to clipboard!</div>
+
+
+    <!-- ===== SCROLLABLE INFO SECTION ===== -->
+    <section id="landing">
+
+        <!-- Hero -->
+        <p class="section-label">Game Objective</p>
+        <h2 class="landing-hero-title">Untangle.<br>Escape. Win.</h2>
+        <p class="landing-hero-sub">
+            A dense grid of winding arrow-snakes stands between you and victory.
+            Study the tangle, find the exit order, and clear every last one.
+        </p>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <span class="sc-icon">🏆</span>
+                <span class="sc-val">5</span>
+                <span class="sc-label">Tutorial Levels</span>
+            </div>
+            <div class="stat-card">
+                <span class="sc-icon">∞</span>
+                <span class="sc-val">∞</span>
+                <span class="sc-label">Generated Levels</span>
+            </div>
+            <div class="stat-card">
+                <span class="sc-icon">❤️</span>
+                <span class="sc-val">3</span>
+                <span class="sc-label">Lives Per Level</span>
+            </div>
+        </div>
+
+        <!-- How To Play -->
+        <p class="section-label" style="margin-top:0;">How To Play</p>
+        <h2 class="landing-hero-title" style="font-size:clamp(22px,5vw,34px); margin-bottom:20px;">Four Rules.<br>Infinite Puzzles.</h2>
+        <div class="how-grid">
+            <div class="how-card">
+                <span class="hc-num">01</span>
+                <div class="hc-title">Tap a Snake</div>
+                <p class="hc-desc">Click any arrow on the grid to attempt to move it.</p>
+            </div>
+            <div class="how-card">
+                <span class="hc-num">02</span>
+                <div class="hc-title">Clear Path = Exit</div>
+                <p class="hc-desc">If the arrow's path to the edge is free, it slithers off the grid.</p>
+            </div>
+            <div class="how-card">
+                <span class="hc-num">03</span>
+                <div class="hc-title">Blocked = Lose a Life</div>
+                <p class="hc-desc">Tapping a snake that is blocked costs you a ❤️. Lose all 3 and the level restarts.</p>
+            </div>
+            <div class="how-card">
+                <span class="hc-num">04</span>
+                <div class="hc-title">Clear the Grid</div>
+                <p class="hc-desc">Remove every snake from the board to win and advance to the next level.</p>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <p class="section-label">FAQ</p>
+        <h2 class="landing-hero-title" style="font-size:clamp(22px,5vw,32px); margin-bottom:20px;">Common Questions</h2>
+        <div class="faq-section" id="faq">
+            <div class="faq-item">
+                <button class="faq-q">How do I know which snake to move first? <span class="faq-icon">+</span></button>
+                <div class="faq-a">Look for a snake whose arrowhead points toward an empty lane all the way to the edge. That snake can escape first and will free up room for others.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q">What happens when I lose all 3 hearts? <span class="faq-icon">+</span></button>
+                <div class="faq-a">The current level will automatically restart from the beginning. Your hearts are fully restored, so try a different approach this time!</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q">Are the generated levels always solvable? <span class="faq-icon">+</span></button>
+                <div class="faq-a">Yes — always. The procedural engine places snakes using a reverse algorithm that mathematically guarantees every puzzle has at least one valid solution.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q">Will my progress be saved if I close the browser? <span class="faq-icon">+</span></button>
+                <div class="faq-a">Yes! Your current level is saved in your browser's local storage and will be loaded automatically the next time you open the game.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q">How do I share a custom level I created? <span class="faq-icon">+</span></button>
+                <div class="faq-a">Use the ✏️ Level Editor button at the bottom-right, draw your puzzle, then click 🔗 Share Link. It copies a URL to your clipboard that anyone can open to play your level.</div>
+            </div>
+        </div>
+
+        <p class="landing-footer">
+            Infinite procedural levels · Custom level editor included<br>
+            <span style="opacity:.5;">Vector Yard — Arrow Chain Puzzle</span>
+        </p>
+    </section>
+
+    <div id="winOverlay">
+        <h2>GRID CLEARED</h2>
+        <p id="winSub">Level complete.</p>
+        <button class="primary" id="winNextBtn">Continue →</button>
+    </div>
+
+    <script>
+        (function () {
+            "use strict";
+
+            // ── SETTINGS (Theme & Sound) ───────────────────────────────────────
+            let isDark = localStorage.getItem('arrowTheme') === 'dark';
+            const themeBtn = document.getElementById('themeToggleBtn');
+            if (isDark) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeBtn.textContent = '☀️';
+            }
+            themeBtn.addEventListener('click', () => {
+                isDark = !isDark;
+                if (isDark) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    themeBtn.textContent = '☀️';
+                    localStorage.setItem('arrowTheme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    themeBtn.textContent = '🌙';
+                    localStorage.setItem('arrowTheme', 'light');
+                }
+            });
+
+            let isMuted = localStorage.getItem('arrowMuted') === 'true';
+            const soundBtn = document.getElementById('soundToggleBtn');
+            if (isMuted) soundBtn.textContent = '🔇';
+            
+            soundBtn.addEventListener('click', () => {
+                isMuted = !isMuted;
+                soundBtn.textContent = isMuted ? '🔇' : '🔊';
+                localStorage.setItem('arrowMuted', isMuted.toString());
+                if (SFX.bgGain) {
+                    const c = SFX.getCtx();
+                    if (isMuted) {
+                        SFX.bgGain.gain.linearRampToValueAtTime(0, c.currentTime + 0.5);
+                    } else {
+                        SFX.bgGain.gain.linearRampToValueAtTime(0.06, c.currentTime + 0.5);
+                    }
+                }
+            });
+
+            // path: array of [r, c] defining the snake body. First element is the head.
+            const LEVELS = [
+                // Level 1: Traffic jam & bends
+                {
+                    rows: 6, cols: 6,
+                    snakes: [
+                        { id: 1, path: [[1, 4], [2, 4], [2, 3]] },
+                        { id: 2, path: [[3, 4], [4, 4], [4, 3]] },
+                        { id: 3, path: [[4, 2], [4, 1], [3, 1]] },
+                        { id: 4, path: [[2, 1], [1, 1], [1, 2]] }
+                    ]
+                },
+                // Level 2: Interlocking spiral
+                {
+                    rows: 6, cols: 6,
+                    snakes: [
+                        { id: 1, path: [[4, 1], [4, 2], [5, 2]] },
+                        { id: 2, path: [[2, 2], [1, 2], [1, 1]] },
+                        { id: 3, path: [[1, 4], [1, 5], [0, 5]] },
+                        { id: 4, path: [[3, 5], [4, 5], [4, 4]] }
+                    ]
+                },
+                // Level 3: Dense web
+                {
+                    rows: 6, cols: 6,
+                    snakes: [
+                        { id: 1, path: [[0, 3], [0, 4], [1, 4]] },
+                        { id: 2, path: [[2, 4], [3, 4], [3, 5]] },
+                        { id: 3, path: [[4, 5], [5, 5], [5, 4]] },
+                        { id: 4, path: [[5, 3], [5, 2], [5, 1]] },
+                        { id: 5, path: [[4, 2], [3, 2], [2, 2]] },
+                        { id: 6, path: [[2, 1], [2, 0], [1, 0]] }
+                    ]
+                },
+                // Level 4: Central blockage
+                {
+                    rows: 6, cols: 6,
+                    snakes: [
+                        { id: 1, path: [[0, 2], [1, 2], [1, 1]] },
+                        { id: 2, path: [[2, 2], [3, 2], [3, 3]] },
+                        { id: 3, path: [[3, 1], [3, 0], [4, 0]] },
+                        { id: 4, path: [[5, 5], [4, 5], [3, 5]] },
+                        { id: 5, path: [[4, 3], [4, 2], [5, 2]] },
+                        { id: 6, path: [[2, 3], [1, 3], [1, 4]] }
+                    ]
+                },
+                // Level 5: Snake Pit
+                {
+                    rows: 7, cols: 7,
+                    snakes: [
+                        { id: 1, path: [[0, 6], [0, 5], [1, 5]] },
+                        { id: 2, path: [[0, 3], [0, 2], [0, 1]] },
+                        { id: 3, path: [[2, 3], [3, 3], [3, 2]] },
+                        { id: 4, path: [[2, 5], [2, 6], [3, 6], [4, 6]] },
+                        { id: 5, path: [[4, 3], [4, 2], [4, 1]] },
+                        { id: 6, path: [[5, 3], [6, 3], [6, 4]] },
+                        { id: 7, path: [[6, 1], [6, 0], [5, 0]] }
+                    ]
+                }
+            ];
+
+            const DIRS = {
+                U: { dr: -1, dc: 0, rot: 0 },
+                D: { dr: 1, dc: 0, rot: 180 },
+                L: { dr: 0, dc: -1, rot: 270 },
+                R: { dr: 0, dc: 1, rot: 90 }
+            };
+
+            let levelIdx = parseInt(localStorage.getItem('arrowLevel') || '0', 10);
+            let rows, cols;
+            let snakes = [];
+            let moves = 0;
+            let cellSize = 64;
+            let animating = false;
+            let lives = 3;
+
+            const grid = document.getElementById('grid');
+            const hudLevel = document.getElementById('hudLevel');
+            const hudRemaining = document.getElementById('hudRemaining');
+            const hudMoves = document.getElementById('hudMoves');
+            const statusEl = document.getElementById('status');
+            const winOverlay = document.getElementById('winOverlay');
+            const winSub = document.getElementById('winSub');
+
+            function computeDir(path) {
+                const [r1, c1] = path[0];
+                const [r2, c2] = path[1];
+                if (r1 < r2) return 'U';
+                if (r1 > r2) return 'D';
+                if (c1 < c2) return 'L';
+                if (c1 > c2) return 'R';
+                return 'U';
+            }
+
+            function generateLevel(idx) {
+                const difficulty = idx - 5;
+                const size = Math.min(24, 10 + difficulty * 2); 
+                const genRows = size;
+                const genCols = size;
+                const genSnakes = [];
+                const occupied = Array.from({length: genRows}, () => Array(genCols).fill(false));
+                
+                let failures = 0;
+                const maxFailures = 2000;
+                
+                while(failures < maxFailures) {
+                    const empties = [];
+                    for(let r=0; r<genRows; r++){
+                        for(let c=0; c<genCols; c++){
+                            if(!occupied[r][c]) empties.push({r, c});
+                        }
+                    }
+                    if(empties.length === 0) break;
+                    
+                    // Bias toward center: sort by distance to center
+                    const midR = genRows / 2;
+                    const midC = genCols / 2;
+                    empties.sort((a, b) => {
+                        const distA = Math.abs(a.r - midR) + Math.abs(a.c - midC);
+                        const distB = Math.abs(b.r - midR) + Math.abs(b.c - midC);
+                        return distA - distB;
+                    });
+                    
+                    // Use a squared random to heavily favor the beginning of the array (the center)
+                    const idx = Math.floor(Math.pow(Math.random(), 2.5) * empties.length);
+                    const {r: hr, c: hc} = empties[idx];
+                    const validDirs = [];
+                    for(const [d, v] of Object.entries(DIRS)) {
+                        let r = hr, c = hc, blocked = false;
+                        while(r >= 0 && r < genRows && c >= 0 && c < genCols) {
+                            if(occupied[r][c]) { blocked = true; break; }
+                            r += v.dr; c += v.dc;
+                        }
+                        if(!blocked) validDirs.push({d, v});
+                    }
+                    if(validDirs.length === 0) { failures++; continue; }
+                    
+                    const chosen = validDirs[Math.floor(Math.random() * validDirs.length)];
+                    const nr = hr - chosen.v.dr;
+                    const nc = hc - chosen.v.dc;
+                    if(nr < 0 || nr >= genRows || nc < 0 || nc >= genCols || occupied[nr][nc]) {
+                        failures++; continue; 
+                    }
+                    
+                    const path = [[hr, hc]];
+                    occupied[hr][hc] = true;
+                    
+                    let currR = nr, currC = nc;
+                    let targetLen = Math.floor(Math.random() * 12) + 3; // Length 3 to 14
+                    
+                    while(path.length < targetLen) {
+                        path.push([currR, currC]);
+                        occupied[currR][currC] = true;
+                        
+                        const neighbors = [];
+                        for(const v of Object.values(DIRS)) {
+                            const nnr = currR + v.dr, nnc = currC + v.dc;
+                            if(nnr >= 0 && nnr < genRows && nnc >= 0 && nnc < genCols && !occupied[nnr][nnc]) {
+                                neighbors.push({r: nnr, c: nnc});
+                            }
+                        }
+                        if(neighbors.length === 0) break;
+                        const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        currR = next.r; currC = next.c;
+                    }
+                    genSnakes.push({ id: genSnakes.length + 1, path });
+                    failures = 0;
+                }
+                
+                return { rows: genRows, cols: genCols, snakes: genSnakes };
+            }
+
+            function getOptimalCellSize(r, c) {
+                const maxW = Math.min(window.innerWidth - 40, 600);
+                // Leave room for the title, HUD, hearts, and bottom buttons (approx 280px total)
+                const maxH = window.innerHeight - 280;
+                const cellW = Math.floor(maxW / c);
+                const cellH = Math.floor(maxH / r);
+                return Math.max(16, Math.min(64, Math.min(cellW, cellH)));
+            }
+
+            function loadLevel(idx) {
+                const lvl = (idx < LEVELS.length) ? LEVELS[idx] : generateLevel(idx);
+                rows = lvl.rows; cols = lvl.cols;
+                snakes = JSON.parse(JSON.stringify(lvl.snakes));
+                
+                cellSize = getOptimalCellSize(rows, cols);
+                document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
+                
+                snakes.forEach(s => {
+                    s.dir = computeDir(s.path);
+                });
+                moves = 0;
+                lives = 3;
+                updateHearts();
+                animating = false;
+                hudLevel.textContent = (idx + 1);
+                winOverlay.classList.remove('show');
+                document.getElementById('nextBtn').style.display = 'none';
+                buildGrid();
+                render();
+                showStatus('Level ' + (idx + 1) + ' — clear the grid', 1400);
+            }
+
+            function updateHearts() {
+                document.getElementById('hearts').textContent = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives);
+            }
+
+            function buildGrid() {
+                grid.innerHTML = '';
+                grid.style.width = (cols * cellSize) + 'px';
+                grid.style.height = (rows * cellSize) + 'px';
+                
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.id = "snakes-layer";
+                svg.setAttribute("width", cols * cellSize);
+                svg.setAttribute("height", rows * cellSize);
+                grid.appendChild(svg);
+            }
+
+            function getBoard() {
+                const b = Array.from({ length: rows }, () => Array(cols).fill(null));
+                for (const s of snakes) {
+                    for (const [r, c] of s.path) {
+                        b[r][c] = s.id;
+                    }
+                }
+                return b;
+            }
+
+            function isPathClear(snake, board) {
+                const { dr, dc } = DIRS[snake.dir];
+                let rr = snake.path[0][0] + dr;
+                let cc = snake.path[0][1] + dc;
+                while (rr >= 0 && rr < rows && cc >= 0 && cc < cols) {
+                    if (board[rr][cc] && board[rr][cc] !== snake.id) return false;
+                    rr += dr; cc += dc;
+                }
+                return true;
+            }
+
+            function render() {
+                const svg = document.getElementById('snakes-layer');
+                if (!svg) return;
+                svg.innerHTML = '';
+                const board = getBoard();
+                
+                snakes.forEach(snake => {
+                    const movable = isPathClear(snake, board);
+                    const pts = snake.path.map(([r,c]) => ({x: c*cellSize + cellSize/2, y: r*cellSize + cellSize/2}));
+                    const tailToHead = [...pts].reverse();
+                    
+                    const {dr, dc} = DIRS[snake.dir];
+                    let exitSteps = 0;
+                    const [hr, hc] = snake.path[0];
+                    if (dr === -1) exitSteps = hr + 1;
+                    else if (dr === 1) exitSteps = rows - hr;
+                    else if (dc === -1) exitSteps = hc + 1;
+                    else exitSteps = cols - hc;
+                    
+                    let snakeLength = 0;
+                    for(let i=0; i<tailToHead.length-1; i++){
+                        snakeLength += Math.abs(tailToHead[i+1].x - tailToHead[i].x) + Math.abs(tailToHead[i+1].y - tailToHead[i].y);
+                    }
+                    
+                    const exitDist = exitSteps * cellSize + snakeLength + cellSize * 2;
+                    const exitPt = {
+                        x: tailToHead[tailToHead.length-1].x + dc * exitDist,
+                        y: tailToHead[tailToHead.length-1].y + dr * exitDist
+                    };
+                    const trackPts = [...tailToHead, exitPt];
+                    
+                    let d = `M ${trackPts[0].x} ${trackPts[0].y}`;
+                    for(let i=1; i<trackPts.length; i++){
+                        d += ` L ${trackPts[i].x} ${trackPts[i].y}`;
+                    }
+                    
+                    const rot = DIRS[snake.dir].rot;
+                    const headPt = tailToHead[tailToHead.length-1];
+                    
+                    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    group.setAttribute("class", `snake-group ${movable ? 'movable' : 'locked'}`);
+                    group.setAttribute("data-id", snake.id);
+                    
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("class", "snake-body");
+                    path.setAttribute("d", d);
+                    path.setAttribute("stroke-dasharray", `${Math.max(snakeLength, 0.1)} 9999`);
+                    path.setAttribute("stroke-dashoffset", "0");
+                    path.style.strokeWidth = '3px';
+                    path.dataset.exitDist = exitDist;
+                    
+                    const head = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                    head.setAttribute("class", "snake-head");
+                    const hw = 5;
+                    const hl = 6;
+                    head.setAttribute("points", `-${hw},${hw} 0,-${hl} ${hw},${hw}`);
+                    head.setAttribute("transform", `translate(${headPt.x}, ${headPt.y}) rotate(${rot})`);
+                    
+                    group.appendChild(path);
+                    group.appendChild(head);
+                    group.addEventListener('click', () => onSnakeTap(snake, group, movable));
+                    svg.appendChild(group);
+                });
+                
+                hudRemaining.textContent = snakes.length;
+                hudMoves.textContent = moves;
+                
+                if (snakes.length === 0) {
+                    setTimeout(() => {
+                        SFX.win();
+                        winSub.textContent = 'Level ' + (levelIdx + 1) + ' complete in ' + moves + ' move' + (moves === 1 ? '' : 's') + '.';
+                        winOverlay.classList.add('show');
+                        document.getElementById('nextBtn').style.display = 'inline-block';
+                    }, 420);
+                }
+
+                // Tutorial Hand for Level 1
+                document.querySelectorAll('.tutorial-hand-wrap').forEach(e => e.remove());
+                if (levelIdx === 0 && snakes.length > 0) {
+                    // Find the first unblocked snake
+                    const firstMovable = snakes.find(s => isPathClear(s, board));
+                    if (firstMovable) {
+                        const midIdx = Math.floor(firstMovable.path.length / 2);
+                        const [mr, mc] = firstMovable.path[midIdx];
+
+                        const wrap = document.createElement('div');
+                        wrap.className = 'tutorial-hand-wrap';
+                        wrap.style.left = (mc * cellSize + cellSize/2) + 'px';
+                        wrap.style.top = (mr * cellSize + cellSize/2) + 'px';
+
+                        let rot = 0;
+                        if (firstMovable.dir === 'R') rot = 90;
+                        else if (firstMovable.dir === 'D') rot = 180;
+                        else if (firstMovable.dir === 'L') rot = -90;
+                        wrap.style.transform = `rotate(${rot}deg)`;
+
+                        const hand = document.createElement('div');
+                        hand.className = 'tutorial-hand';
+                        hand.textContent = '👆';
+
+                        wrap.appendChild(hand);
+                        document.getElementById('grid').appendChild(wrap);
+                    }
+                }
+            }
+
+            function onSnakeTap(snake, group, movable) {
+                if (animating || lives <= 0) return;
+                if (!movable) {
+                    const board = getBoard();
+                    bumpSnake(group, snake.dir);
+                    showBlockerLine(snake, board);
+                    lives--;
+                    updateHearts();
+                    if (lives <= 0) {
+                        SFX.fail();
+                        showStatus('Out of lives! Restarting level...', 2000);
+                        setTimeout(resetLevel, 2000);
+                    } else {
+                        SFX.bump();
+                        showStatus('Blocked! Lives remaining: ' + lives, 1100);
+                    }
+                    return;
+                }
+                fireSnake(snake, group);
+            }
+
+            function showBlockerLine(snake, board) {
+                const { dr, dc } = DIRS[snake.dir];
+                let rr = snake.path[0][0] + dr;
+                let cc = snake.path[0][1] + dc;
+                let blockerId = null;
+                while (rr >= 0 && rr < rows && cc >= 0 && cc < cols) {
+                    if (board[rr][cc] && board[rr][cc] !== snake.id) {
+                        blockerId = board[rr][cc];
+                        break;
+                    }
+                    rr += dr; cc += dc;
+                }
+                if (!blockerId) return;
+                
+                const blockerGroup = document.querySelector(`.snake-group[data-id="${blockerId}"]`);
+                if (blockerGroup) {
+                    const bBody = blockerGroup.querySelector('.snake-body');
+                    const bHead = blockerGroup.querySelector('.snake-head');
+                    if (bBody) bBody.style.stroke = 'var(--error-color)';
+                    if (bHead) bHead.style.fill = 'var(--error-color)';
+                    setTimeout(() => { 
+                        if (bBody) bBody.style.stroke = '';
+                        if (bHead) bHead.style.fill = '';
+                    }, 400);
+                }
+            }
+
+            function bumpSnake(group, dir) {
+                const { dr, dc } = DIRS[dir];
+                const dist = 8;
+                group.style.setProperty('--bx', (dc * dist) + 'px');
+                group.style.setProperty('--by', (dr * dist) + 'px');
+                group.classList.remove('bump');
+                void group.offsetWidth;
+                group.classList.add('bump');
+            }
+
+            function fireSnake(snake, group) {
+                animating = true;
+                SFX.fire();
+
+                const body = group.querySelector('.snake-body');
+                const head = group.querySelector('.snake-head');
+                const exitDist = parseFloat(body.dataset.exitDist);
+                const {dr, dc} = DIRS[snake.dir];
+                
+                group.classList.add('firing');
+                
+                void body.offsetWidth; // force reflow
+                body.style.transition = 'stroke-dashoffset 0.45s cubic-bezier(0.4, 0, 0.2, 1)';
+                body.style.strokeDashoffset = -exitDist;
+                
+                head.style.transition = 'transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)';
+                const headPt = {
+                    x: snake.path[0][1] * cellSize + cellSize/2,
+                    y: snake.path[0][0] * cellSize + cellSize/2
+                };
+                const rot = DIRS[snake.dir].rot;
+                head.style.transform = `translate(${headPt.x + dc * exitDist}px, ${headPt.y + dr * exitDist}px) rotate(${rot}deg)`;
+                
+                setTimeout(() => { group.style.opacity = 0; }, 420);
+
+                setTimeout(() => {
+                    snakes = snakes.filter(s => s.id !== snake.id);
+                    moves++;
+                    animating = false;
+                    render();
+                }, 480);
+            }
+
+            function showStatus(msg, ms) {
+                statusEl.textContent = msg;
+                statusEl.classList.add('show');
+                clearTimeout(showStatus._t);
+                showStatus._t = setTimeout(() => statusEl.classList.remove('show'), ms || 1100);
+            }
+
+            function resetLevel() {
+                loadLevel(levelIdx);
+            }
+
+            function nextLevel() {
+                levelIdx = levelIdx + 1;
+                localStorage.setItem('arrowLevel', levelIdx);
+                loadLevel(levelIdx);
+            }
+
+            document.getElementById('nextBtn').addEventListener('click', nextLevel);
+            document.getElementById('winNextBtn').addEventListener('click', nextLevel);
+
+            // ── SOUND ENGINE (Web Audio API, zero external files) ───────────────
+            const SFX = (() => {
+                let ctx = null;
+                let bgGain = null;
+                let bgStarted = false;
+
+                function getCtx() {
+                    if (!ctx) {
+                        ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        // Master gain
+                        bgGain = ctx.createGain();
+                        bgGain.gain.value = isMuted ? 0 : 0.06;
+                        bgGain.connect(ctx.destination);
+                    }
+                    if (ctx.state === 'suspended') ctx.resume();
+                    return ctx;
+                }
+
+                // ── Background ambient loop ────────────────────────────────────
+                function startBg() {
+                    if (bgStarted) return;
+                    bgStarted = true;
+                    const c = getCtx();
+                    const notes = [110, 138.6, 164.8, 220]; // A2 C#3 E3 A3 (minor)
+                    let step = 0;
+                    function pulse() {
+                        const osc = c.createOscillator();
+                        const g   = c.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = notes[step % notes.length];
+                        g.gain.setValueAtTime(0, c.currentTime);
+                        g.gain.linearRampToValueAtTime(0.4, c.currentTime + 0.3);
+                        g.gain.linearRampToValueAtTime(0, c.currentTime + 1.8);
+                        osc.connect(g);
+                        g.connect(bgGain);
+                        osc.start();
+                        osc.stop(c.currentTime + 2);
+                        step++;
+                        setTimeout(pulse, 2000);
+                    }
+                    pulse();
+                }
+
+                // ── Snake fires whoosh ─────────────────────────────────────────
+                function fire() {
+                    if (isMuted) return;
+                    const c = getCtx();
+                    startBg();
+                    const osc = c.createOscillator();
+                    const g   = c.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(600, c.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, c.currentTime + 0.35);
+                    g.gain.setValueAtTime(0.18, c.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35);
+                    osc.connect(g);
+                    g.connect(c.destination);
+                    osc.start();
+                    osc.stop(c.currentTime + 0.4);
+                }
+
+                // ── Blocked collision thud ─────────────────────────────────────
+                function bump() {
+                    if (isMuted) return;
+                    const c = getCtx();
+                    startBg();
+                    // Low thump
+                    const osc = c.createOscillator();
+                    const g   = c.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, c.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(60, c.currentTime + 0.15);
+                    g.gain.setValueAtTime(0.4, c.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.18);
+                    osc.connect(g);
+                    g.connect(c.destination);
+                    osc.start();
+                    osc.stop(c.currentTime + 0.2);
+                    // Noise crunch layer
+                    const buf = c.createBuffer(1, c.sampleRate * 0.1, c.sampleRate);
+                    const data = buf.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+                    const src = c.createBufferSource();
+                    const ng  = c.createGain();
+                    const flt = c.createBiquadFilter();
+                    flt.type = 'bandpass'; flt.frequency.value = 800;
+                    src.buffer = buf;
+                    ng.gain.setValueAtTime(0.15, c.currentTime);
+                    ng.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.1);
+                    src.connect(flt); flt.connect(ng); ng.connect(c.destination);
+                    src.start();
+                }
+
+                // ── Heart lost descending sting ────────────────────────────────
+                function fail() {
+                    if (isMuted) return;
+                    const c = getCtx();
+                    startBg();
+                    [400, 300, 200].forEach((freq, i) => {
+                        const osc = c.createOscillator();
+                        const g   = c.createGain();
+                        osc.type = 'square';
+                        osc.frequency.value = freq;
+                        const t = c.currentTime + i * 0.15;
+                        g.gain.setValueAtTime(0.18, t);
+                        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+                        osc.connect(g); g.connect(c.destination);
+                        osc.start(t); osc.stop(t + 0.14);
+                    });
+                }
+
+                // ── Level win ascending fanfare ────────────────────────────────
+                function win() {
+                    if (isMuted) return;
+                    const c = getCtx();
+                    startBg();
+                    const melody = [523, 659, 784, 1047]; // C5 E5 G5 C6
+                    melody.forEach((freq, i) => {
+                        const osc = c.createOscillator();
+                        const g   = c.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+                        const t = c.currentTime + i * 0.13;
+                        g.gain.setValueAtTime(0, t);
+                        g.gain.linearRampToValueAtTime(0.22, t + 0.04);
+                        g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+                        osc.connect(g); g.connect(c.destination);
+                        osc.start(t); osc.stop(t + 0.38);
+                    });
+                }
+
+                return { fire, bump, fail, win, startBg, get bgGain() { return bgGain; }, getCtx };
+            })();
+
+            // ── LEVEL EDITOR ───────────────────────────────────────────────────
+            let editMode = false;
+            let edRows = 8, edCols = 8;
+            let edSnakes = [];   // [{id, path:[]}]
+            let edDrawing = false;
+            let edCurrentPath = [];
+            let edNextId = 1;
+
+            const editorToggleBtn = document.getElementById('editorToggleBtn');
+            const editorToolbar   = document.getElementById('editorToolbar');
+            const shareToast      = document.getElementById('shareToast');
+
+            function enterEditMode() {
+                editMode = true;
+                editorToggleBtn.textContent = '✕ Exit Editor';
+                editorToggleBtn.classList.add('active');
+                editorToolbar.classList.add('visible');
+                document.getElementById('hearts').style.visibility = 'hidden';
+                document.querySelector('.hud').style.visibility = 'hidden';
+                winOverlay.classList.remove('show');
+
+                edRows = 8; edCols = 8;
+                edSnakes = []; edNextId = 1;
+                rebuildEditorGrid();
+            }
+
+            function exitEditMode() {
+                editMode = false;
+                editorToggleBtn.textContent = '✏️ Level Editor';
+                editorToggleBtn.classList.remove('active');
+                editorToolbar.classList.remove('visible');
+                document.getElementById('hearts').style.visibility = '';
+                document.querySelector('.hud').style.visibility = '';
+                // Remove editor overlay
+                const eg = document.getElementById('editorGrid');
+                if (eg) eg.remove();
+                // Reload the current game level
+                loadLevel(levelIdx);
+            }
+
+            editorToggleBtn.addEventListener('click', () => {
+                if (editMode) exitEditMode(); else enterEditMode();
+            });
+
+            function rebuildEditorGrid() {
+                // Resize visual grid
+                const cs = getOptimalCellSize(edRows, edCols);
+                document.documentElement.style.setProperty('--cell-size', cs + 'px');
+
+                grid.style.width  = (edCols * cs) + 'px';
+                grid.style.height = (edRows * cs) + 'px';
+                grid.innerHTML = '';
+
+                // SVG for drawn snakes
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.id = 'snakes-layer';
+                svg.setAttribute('width',  edCols * cs);
+                svg.setAttribute('height', edRows * cs);
+                grid.appendChild(svg);
+
+                // SVG overlay for drawing interaction
+                const eg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                eg.id = 'editorGrid';
+                eg.setAttribute('width',  edCols * cs);
+                eg.setAttribute('height', edRows * cs);
+                eg.style.position = 'absolute';
+                eg.style.top  = (cs * 0.25) + 'px';
+                eg.style.left = (cs * 0.25) + 'px';
+                eg.style.zIndex = '20';
+                eg.style.cursor = 'crosshair';
+                eg.style.display = 'block';
+                grid.appendChild(eg);
+
+                attachEditorEvents(eg, cs);
+                renderEditorSnakes(svg, cs);
+            }
+
+            function cellFromPoint(eg, cs, clientX, clientY) {
+                const rect = eg.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+                const c = Math.floor(x / cs);
+                const r = Math.floor(y / cs);
+                if (r < 0 || r >= edRows || c < 0 || c >= edCols) return null;
+                return [r, c];
+            }
+
+            function attachEditorEvents(eg, cs) {
+                eg.addEventListener('pointerdown', e => {
+                    e.preventDefault();
+                    const cell = cellFromPoint(eg, cs, e.clientX, e.clientY);
+                    if (!cell) return;
+
+                    // Always start a potential draw path from wherever they clicked
+                    edDrawing = true;
+                    edCurrentPath = [cell];
+                    eg.setPointerCapture(e.pointerId);
+                    drawEditorPreview(eg, cs);
+                });
+
+                eg.addEventListener('pointermove', e => {
+                    if (!edDrawing) return;
+                    const cell = cellFromPoint(eg, cs, e.clientX, e.clientY);
+                    if (!cell) return;
+                    const last = edCurrentPath[edCurrentPath.length - 1];
+                    if (last[0] === cell[0] && last[1] === cell[1]) return;
+
+                    // Only allow adjacent (no diagonal)
+                    const dr = Math.abs(cell[0] - last[0]);
+                    const dc = Math.abs(cell[1] - last[1]);
+                    if (dr + dc !== 1) return;
+
+                    // Don't revisit
+                    if (edCurrentPath.some(([pr,pc]) => pr===cell[0] && pc===cell[1])) return;
+
+                    // Don't overlap existing snakes
+                    const occupied = edSnakes.some(s => s.path.some(([pr,pc]) => pr===cell[0] && pc===cell[1]));
+                    if (occupied) return;
+
+                    edCurrentPath.push(cell);
+                    drawEditorPreview(eg, cs);
+                });
+
+                eg.addEventListener('pointerup', e => {
+                    if (!edDrawing) return;
+                    edDrawing = false;
+
+                    if (edCurrentPath.length === 1) {
+                        // Pure tap (no drag) — delete the snake under the tap if one exists
+                        const [r, c] = edCurrentPath[0];
+                        const hitIdx = edSnakes.findIndex(s => s.path.some(([pr,pc]) => pr===r && pc===c));
+                        if (hitIdx !== -1) {
+                            edSnakes.splice(hitIdx, 1);
+                            renderEditorSnakes(document.getElementById('snakes-layer'), cs);
+                        }
+                    } else if (edCurrentPath.length >= 2) {
+                        // Drag completed — save as new snake (reverse: last cell = head with arrow)
+                        const path = [...edCurrentPath].reverse();
+                        edSnakes.push({ id: edNextId++, path });
+                        renderEditorSnakes(document.getElementById('snakes-layer'), cs);
+                    }
+
+                    edCurrentPath = [];
+                    // Clear preview
+                    eg.querySelectorAll('.ed-preview').forEach(p => p.remove());
+                });
+            }
+
+
+            function drawEditorPreview(eg, cs) {
+                eg.querySelectorAll('.ed-preview').forEach(p => p.remove());
+                if (edCurrentPath.length < 1) return;
+                // Draw dots on each cell in path
+                edCurrentPath.forEach(([r,c]) => {
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute('cx', c * cs + cs / 2);
+                    circle.setAttribute('cy', r * cs + cs / 2);
+                    circle.setAttribute('r', Math.max(3, cs * 0.1));
+                    circle.setAttribute('fill', 'rgba(52,152,219,0.5)');
+                    circle.classList.add('ed-preview');
+                    eg.appendChild(circle);
+                });
+                // Draw connecting line
+                if (edCurrentPath.length > 1) {
+                    let d = edCurrentPath.map(([r,c], i) =>
+                        (i === 0 ? 'M' : 'L') + ` ${c * cs + cs/2} ${r * cs + cs/2}`
+                    ).join(' ');
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute('d', d);
+                    path.setAttribute('stroke', 'rgba(52,152,219,0.7)');
+                    path.setAttribute('stroke-width', 3);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke-linecap', 'round');
+                    path.setAttribute('stroke-linejoin', 'round');
+                    path.classList.add('ed-preview');
+                    eg.appendChild(path);
+                }
+            }
+
+            function renderEditorSnakes(svgEl, cs) {
+                svgEl.innerHTML = '';
+                // Build a temporary board for direction computation
+                edSnakes.forEach(s => {
+                    if (s.path.length < 2) return;
+                    const pts = s.path.map(([r,c]) => ({ x: c*cs + cs/2, y: r*cs + cs/2 }));
+                    const tailToHead = [...pts].reverse();
+
+                    let d = 'M ' + tailToHead.map(p => `${p.x} ${p.y}`).join(' L ');
+
+                    const dir = computeDir(s.path);
+                    const rot = DIRS[dir].rot;
+                    const headPt = tailToHead[tailToHead.length - 1];
+
+                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    line.setAttribute('d', d);
+                    line.setAttribute('stroke', '#2980b9');
+                    line.setAttribute('stroke-width', '3');
+                    line.setAttribute('fill', 'none');
+                    line.setAttribute('stroke-linecap', 'round');
+                    line.setAttribute('stroke-linejoin', 'round');
+
+                    const hw = 5, hl = 6;
+                    const arrowHead = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                    arrowHead.setAttribute('points', `-${hw},${hw} 0,-${hl} ${hw},${hw}`);
+                    arrowHead.setAttribute('fill', '#2980b9');
+                    arrowHead.setAttribute('transform', `translate(${headPt.x},${headPt.y}) rotate(${rot})`);
+
+                    g.appendChild(line);
+                    g.appendChild(arrowHead);
+                    svgEl.appendChild(g);
+                });
+            }
+
+            // Grid resize buttons
+            document.getElementById('edAddRow').addEventListener('click', () => { edRows = Math.min(20, edRows+1); rebuildEditorGrid(); });
+            document.getElementById('edRemRow').addEventListener('click', () => {
+                edRows = Math.max(3, edRows-1);
+                edSnakes = edSnakes.filter(s => s.path.every(([r]) => r < edRows));
+                rebuildEditorGrid();
+            });
+            document.getElementById('edAddCol').addEventListener('click', () => { edCols = Math.min(20, edCols+1); rebuildEditorGrid(); });
+            document.getElementById('edRemCol').addEventListener('click', () => {
+                edCols = Math.max(3, edCols-1);
+                edSnakes = edSnakes.filter(s => s.path.every(([,c]) => c < edCols));
+                rebuildEditorGrid();
+            });
+            document.getElementById('edClear').addEventListener('click', () => { edSnakes = []; rebuildEditorGrid(); });
+
+            // Play Test — inject custom level into the game pipeline
+            document.getElementById('edPlayTest').addEventListener('click', () => {
+                if (edSnakes.length === 0) { alert('Draw at least one snake first!'); return; }
+                exitEditMode();
+                // Temporarily override levelIdx and load the custom level
+                const customLvl = { rows: edRows, cols: edCols, snakes: edSnakes };
+                // Inject without changing levelIdx permanently
+                (() => {
+                    rows = customLvl.rows; cols = customLvl.cols;
+                    snakes = JSON.parse(JSON.stringify(customLvl.snakes));
+                    cellSize = getOptimalCellSize(rows, cols);
+                    document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
+                    snakes.forEach(s => { s.dir = computeDir(s.path); });
+                    moves = 0; lives = 3; updateHearts(); animating = false;
+                    hudLevel.textContent = 'CUSTOM';
+                    winOverlay.classList.remove('show');
+                    document.getElementById('nextBtn').style.display = 'none';
+                    buildGrid(); render();
+                    showStatus('Playing your custom level!', 2000);
+                })();
+            });
+
+            // Share Link — serialize to base64 URL hash
+            document.getElementById('edShare').addEventListener('click', () => {
+                if (edSnakes.length === 0) { alert('Draw at least one snake first!'); return; }
+                const data = { rows: edRows, cols: edCols, snakes: edSnakes };
+                const json = JSON.stringify(data);
+                const b64  = btoa(unescape(encodeURIComponent(json)));
+                const url  = `${location.origin}${location.pathname}#custom=${b64}`;
+                navigator.clipboard.writeText(url).then(() => {
+                    shareToast.classList.add('show');
+                    setTimeout(() => shareToast.classList.remove('show'), 2500);
+                }).catch(() => { prompt('Copy this link:', url); });
+            });
+
+            // Load custom level from URL hash on page load
+            function tryLoadCustomFromHash() {
+                const hash = window.location.hash;
+                if (!hash.startsWith('#custom=')) return false;
+                try {
+                    const b64  = hash.slice('#custom='.length);
+                    const json = decodeURIComponent(escape(atob(b64)));
+                    const data = JSON.parse(json);
+                    if (!data.rows || !data.cols || !Array.isArray(data.snakes)) return false;
+                    rows = data.rows; cols = data.cols;
+                    snakes = JSON.parse(JSON.stringify(data.snakes));
+                    cellSize = getOptimalCellSize(rows, cols);
+                    document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
+                    snakes.forEach(s => { s.dir = computeDir(s.path); });
+                    moves = 0; lives = 3; updateHearts(); animating = false;
+                    hudLevel.textContent = 'CUSTOM';
+                    winOverlay.classList.remove('show');
+                    document.getElementById('nextBtn').style.display = 'none';
+                    buildGrid(); render();
+                    showStatus('Loaded a shared custom level!', 2200);
+                    return true;
+                } catch(e) { return false; }
+            }
+
+            if (!tryLoadCustomFromHash()) {
+                loadLevel(levelIdx);
+            }
+        })();
+    </script>
+
+    <!-- FAQ Accordion -->
+    <script>
+        document.querySelectorAll('.faq-q').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const isOpen = item.classList.contains('open');
+                // Close all
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                // Toggle clicked
+                if (!isOpen) item.classList.add('open');
+            });
+        });
+    </script>
+</body>
+
+</html>
